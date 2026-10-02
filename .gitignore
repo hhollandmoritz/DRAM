@@ -20,7 +20,7 @@ databases
 dbcan_staging/*
 DRAM2-format-kegg/*
 kegg-database*
-tests/data*
+tests/data/owc/*
 
 # Visualization Output Files
 product.html
