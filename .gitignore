@@ -12,6 +12,15 @@ DRAM_output/
 output/
 outdir/
 work/
+results/
+
+# DRAM input folders
+assemblies/*
+databases
+dbcan_staging/*
+DRAM2-format-kegg/*
+kegg-database*
+tests/data/owc/*
 
 # Visualization Output Files
 product.html
