@@ -1,5 +1,5 @@
 //
-// Subworkflow with functionality specific to the WrightonLabCSU/dram pipeline
+// Subworkflow with functionality specific to the BortonWrightonLabs/dram pipeline
 //
 
 /*
@@ -13,7 +13,6 @@ include { getDBFlag                 } from '../../local/utils_pipeline_setup.nf'
 include { paramsSummaryMap          } from 'plugin/nf-schema'
 include { samplesheetToList         } from 'plugin/nf-schema'
 include { paramsHelp                } from 'plugin/nf-schema'
-include { paramsHelp as valHelp     } from 'plugin/nf-validation'
 include { completionEmail           } from '../../nf-core/utils_nfcore_pipeline'
 include { completionSummary         } from '../../nf-core/utils_nfcore_pipeline'
 include { imNotification            } from '../../nf-core/utils_nfcore_pipeline'
@@ -94,9 +93,6 @@ workflow PIPELINE_INITIALISATION {
         if (params.call) {
             error("Input genes file cannot be used with --call. Input genes is used when you are running annotate without call.")
         }
-        if (!params.annotate && !params.generate_gff && !params.generate_gbk) {
-            error("Input genes file must be used with --annotate or --generate_gff --generate_gbk.")
-        }
         if (params.input_fasta) {
             error("--input_genes and --input_fasta both specified, please specify only one.")
         }
@@ -111,7 +107,7 @@ workflow PIPELINE_INITIALISATION {
     if (((params.adjectives || params.traits) || (params.visualize || params.product)) && ((!use_kegg && !use_kofam) || !use_fegenie || !use_sulfur)) {
         // If they are using a premade annotations file, we just trust that they used kegg, fegenies, or sulfur
         if (!params.annotations) {
-            error("When using Traits, make sure you use (Kegg or Kofam), FeGenie, and Sulfur Databases")
+            error("When using Traits or viz, make sure you use (Kegg or Kofam), FeGenie, and Sulfur Databases")
         }
     }
 

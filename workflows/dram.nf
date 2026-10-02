@@ -16,11 +16,16 @@ include { ADJECTIVES             } from "../modules/local/adjectives/adjectives.
 include { PRODUCT_HEATMAP        } from "../modules/local/product/product_heatmap.nf"
 include { CAT_KEGG_PEP           } from "../modules/local/database/cat_kegg_pep.nf"
 include { FORMAT_KEGG_DB         } from "../modules/local/database/format_kegg_db.nf"
+include { MMSEQS_GPU_DATABASE    } from "../modules/local/database/mmseqs_gpu_database.nf"
 include { MERGE                  } from "../subworkflows/local/merge.nf"
 include { ANNOTATE               } from "../subworkflows/local/annotate.nf"
+include { QC                     } from "../subworkflows/local/qc.nf"
 include { ADD_ANNOTATIONS        } from "../modules/local/add_and_combine/add_annotations.nf"
 include { SUMMARIZE              } from "../modules/local/distill/distill.nf"
 include { DECOMPRESS_FASTA       } from "../modules/local/rename/decompress_fasta.nf"
+include { RENAME_FASTA           } from "../modules/local/rename/rename_fasta.nf"
+include { resourceBytes          } from '../subworkflows/local/utils_resource_classes.nf'
+include { batchManifestToTuples; collectNamePathTuples } from '../subworkflows/local/utils_channels.nf'
 
 
 /*
@@ -42,12 +47,12 @@ workflow DRAM {
     ch_fasta = channel.empty()
 
     default_sheet = file(params.distill_dummy_sheet)
-    distill_flag = (params.summarize || params.distill_topic != "" || params.distill_ecosystem != "" || params.distill_custom != "" || params.sum_ecos != "")
+    distill_flag = (params.summarize || params.sum_topics != "" || params.distill_topic != "" || params.distill_ecosystem != "" || params.distill_custom != "" || params.sum_ecos != "")
 
     // if annotate with raw fasta but no call, we can infer we need to call genes, so set call to true
     // Also, if call is specified, set call to true
     call = false
-    if ((params.annotate && params.input_fasta != "") || params.call) {
+    if ((params.annotate && params.input_fasta) || params.call) {
         call = true
     }
     visualize = false
@@ -59,7 +64,7 @@ workflow DRAM {
         traits = true
     }
 
-    if (params.input_fasta && (params.rename || call)) {
+    if (params.input_fasta && (params.rename || call || params.qc)) {
         ch_fasta_raw = channel
             .fromPath(file(params.input_fasta) / params.fasta_fmt, checkIfExists: true)
                 .ifEmpty { exit 1, "Cannot find any fasta files matching: ${params.input_fasta}\nNB: Path needs to follow pattern: path/to/directory/" }
@@ -79,6 +84,14 @@ workflow DRAM {
 
         DECOMPRESS_FASTA( ch_fasta_branched.gz )
         ch_fasta = DECOMPRESS_FASTA.out.decompressed_fasta.mix( ch_fasta_branched.plain )
+
+        if (params.rename) {
+            ch_fasta_collected = collectNamePathTuples(ch_fasta)
+            RENAME_FASTA( ch_fasta_collected )
+            ch_fasta = batchManifestToTuples(RENAME_FASTA.out.renamed_batch)
+        }
+
+        ch_fasta = ch_fasta.map { name, fasta -> tuple(name, fasta, resourceBytes(fasta)) }
     }
     viz_rules_system = params.viz_rules_system
 
@@ -139,10 +152,14 @@ workflow DRAM {
     else {
         distill_custom = ""
     }
-    distill_topic = params.distill_topic
+    distill_topic = params.sum_topics
+    if (distill_topic == "") {
+        distill_topic = params.distill_topic
+    }
     if (distill_flag) {
+        log.info("distill topic: ${distill_topic}")
         if (distill_topic != "") {
-            def validTopics = ['default', 'carbon', 'energy', 'misc', 'nitrogen', 'transport', 'camper', 'none']
+            def validTopics = ['default', 'assim', 'cell', 'energy', 'env', 'none']
             def topics = distill_topic.split(',')
 
             topics.each { topic ->
@@ -155,8 +172,11 @@ workflow DRAM {
         }
 
         if (distill_ecosystem != "") {
-            def validEcos = ['eng_sys', 'ag']
+            def validEcos = ['eng_sys', 'ag', 'bgc', 'gut', 'marine']
             def distillEcosystemList = distill_ecosystem.split(',')
+            def vizRulesSystemList = viz_rules_system ?
+                viz_rules_system.split(',').collect { it.trim() } :
+                []
 
             distillEcosystemList.each { ecosysItem ->
                 if (!validEcos.contains(ecosysItem)) {
@@ -166,12 +186,13 @@ workflow DRAM {
                     if (!((use_kegg || use_kofam) && use_metals && use_dbcan)) {
                         error("When sum_ecos ag, you must include (kegg or kofam), metals, and dbcan databases")
                     }
-                    if (!viz_rules_system) {
-                        viz_rules_system = "ag"
-                    }
+                }
+                if (!vizRulesSystemList.contains(ecosysItem)) {
+                    vizRulesSystemList << ecosysItem
                 }
 
             }
+            viz_rules_system = vizRulesSystemList.join(',')
         }
 
         if (distill_custom != "") {
@@ -217,7 +238,25 @@ workflow DRAM {
     // Single step commands
     //
 
-    if (params.format_kegg){
+    if (params.format_mmseqs_gpu) {
+        if (!params.mmseqs_db_path) {
+            error("--mmseqs_db_path is required with --format_mmseqs_gpu.")
+        }
+        if (!params.mmseqs_db_name) {
+            error("--mmseqs_db_name is required with --format_mmseqs_gpu.")
+        }
+        if (!(params.mmseqs_db_name ==~ /[A-Za-z0-9._-]+/)) {
+            error("--mmseqs_db_name may contain only letters, numbers, periods, underscores, and hyphens.")
+        }
+
+        mmseqs_db_f = file(params.mmseqs_db_path)
+        if (!mmseqs_db_f.exists()) {
+            error("MMseqs database directory not found at ${params.mmseqs_db_path}.")
+        }
+
+        MMSEQS_GPU_DATABASE(mmseqs_db_f, params.mmseqs_db_name)
+
+    } else if (params.format_kegg){
         if ( params.kegg_pep_root_dir ) {
             CAT_KEGG_PEP( file(params.kegg_pep_root_dir) )
             kegg_pep_f = CAT_KEGG_PEP.out.kegg_pep
@@ -244,37 +283,35 @@ workflow DRAM {
         // Pipeline steps
         //
 
-        ANNOTATE (
-            ch_fasta,
-            default_sheet,
-            call,
-            use_kegg,
-            use_kofam,
-            use_dbcan,
-            use_camper,
-            use_fegenie,
-            use_methyl,
-            use_canthyd,
-            use_sulfur,
-            use_pfam,
-            use_merops,
-            use_uniref,
-            use_metals,
-            use_antismash,
-            use_rgi,
-            use_card,
-            use_tcdb,
-            use_dram_db,
-            use_vog
-        )
+        if (params.annotate || params.call) {
 
-        if (params.annotate){ // If the user has specified --annotate, us the outputted annotations
+            ANNOTATE (
+                ch_fasta,
+                default_sheet,
+                call,
+                use_kegg,
+                use_kofam,
+                use_dbcan,
+                use_camper,
+                use_fegenie,
+                use_methyl,
+                use_canthyd,
+                use_sulfur,
+                use_pfam,
+                use_merops,
+                use_uniref,
+                use_metals,
+                use_antismash,
+                use_rgi,
+                use_card,
+                use_tcdb,
+                use_dram_db,
+                use_vog
+            )
+        }
+
+        if (params.annotate){ // If the user has specified --annotate, use the outputted annotations
             ch_final_annots = ANNOTATE.out.ch_combined_annotations
-            if( params.add_annotations ){
-                ch_add_annots = file(params.add_annotations)
-                ADD_ANNOTATIONS( ANNOTATE.out.ch_combined_annotations, ch_add_annots )
-                ch_final_annots = ADD_ANNOTATIONS.out.combined_annots_out
-            }
         } else if (params.annotations) {
             ch_final_annots = channel
                 .fromPath(params.annotations, checkIfExists: true)
@@ -283,12 +320,24 @@ workflow DRAM {
             ch_final_annots = default_sheet
         }
 
+        ch_trna_combined = default_sheet
+        if (params.qc) {
+            scan_input_fasta = params.input_fasta ? true : false
+            QC( ch_fasta, default_sheet, ch_final_annots, scan_input_fasta )
+            ch_final_annots = QC.out.ch_final_annots
+            ch_trna_combined = QC.out.ch_trna_combined
+        }
+
+        if (params.annotate && params.add_annotations) {
+            ch_add_annots = file(params.add_annotations)
+            ADD_ANNOTATIONS( ch_final_annots, ch_add_annots )
+            ch_final_annots = ADD_ANNOTATIONS.out.combined_annots_out
+        }
+
         if (distill_flag) {
             SUMMARIZE(
                 ch_final_annots,
-                ANNOTATE.out.ch_rrna_collected,
-                ANNOTATE.out.ch_trna_collected,
-                ANNOTATE.out.ch_quast_stats,
+                ch_trna_combined,
                 distill_topic,
                 distill_ecosystem,
                 distill_custom
@@ -304,7 +353,10 @@ workflow DRAM {
             ch_viz_rules_tsv = params.viz_rules_tsv ?
                 channel.fromPath(params.viz_rules_tsv, checkIfExists: true) :
                 channel.empty()
-            PRODUCT_HEATMAP( ch_final_annots, params.CONSTANTS.FASTA_COLUMN, ch_viz_rules_tsv.toList(), viz_rules_system )
+            ch_viz_mapping_file = params.viz_mapping_file ?
+                channel.fromPath(params.viz_mapping_file, checkIfExists: true) :
+                channel.empty()
+            PRODUCT_HEATMAP( ch_final_annots, params.CONSTANTS.FASTA_COLUMN, ch_viz_rules_tsv.toList(), ch_viz_mapping_file.toList(), viz_rules_system )
         }
         //
         // ADJECTIVES

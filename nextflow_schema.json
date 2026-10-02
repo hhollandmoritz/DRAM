@@ -1,7 +1,7 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://raw.githubusercontent.com/WrightonLabCSU/dram/dev/nextflow_schema.json",
-    "title": "WrightonLabCSU/dram pipeline parameters",
+    "$id": "https://raw.githubusercontent.com/BortonWrightonLabs/dram/dev/nextflow_schema.json",
+    "title": "BortonWrightonLabs/dram pipeline parameters",
     "description": "DRAM (Distilled and Refined Annotation of Metabolism) is a tool for annotating metagenomic assembled genomes",
     "type": "object",
     "$defs": {
@@ -25,7 +25,7 @@
                 },
                 "qc": {
                     "type": "boolean",
-                    "description": "Run quality control steps such as collect rRNA and tRNA scans. See QC section for more options."
+                    "description": "Run quality control steps. With --input_fasta, DRAM scans for rRNA and tRNA; without FASTA, optional precomputed --rrnas and --trnas tables can be collected. QC can enrich generated or supplied annotations with bin quality and taxonomy."
                 },
                 "summarize": {
                     "type": "boolean",
@@ -48,6 +48,10 @@
                 "format_kegg": {
                     "type": "boolean",
                     "description": "Format KEGG database for use in DRAM. Standalone operation, will exit after completion."
+                },
+                "format_mmseqs_gpu": {
+                    "type": "boolean",
+                    "description": "Format an existing protein MMseqs database for GPU searches. Standalone operation."
                 }
             }
         },
@@ -80,7 +84,7 @@
                 "input_genes": {
                     "type": "string",
                     "format": "directory-path",
-                    "description": "Directory containing called genes. Only used when not running call. This allows you to provide pre-called genes to the pipeline."
+                    "description": "Directory containing called genes. Only used when not running call. This allows you to provide pre-called genes to the pipeline. This is a PRODIGAL output trans_file format."
                 },
                 "genes_fmt": {
                     "type": "string",
@@ -91,7 +95,7 @@
                 "genes_fna_fmt": {
                     "type": "string",
                     "default": "*.fna",
-                    "description": "Input format for the Genes fna file. Only needed if you are not running call and you are passing `--generate_gff` or `--generate_gbk`.",
+                    "description": "Input format for the Genes fna file. Used for certain database searches such as RGI when not running with raw fasta files. This is a PRODIGAL output nuc_file format",
                     "fa_,icon": "fas fa-plus"
                 }
             },
@@ -209,6 +213,10 @@
                     "type": "boolean",
                     "hidden": true
                 },
+                "save_cgc": {
+                    "type": "boolean",
+                    "description": "Whether dbcan step should additionally run and save CAZyme Gene Cluster step information. Not consumed by DRAM, but maybe helpful for users."
+                },
                 "add_annotations": {
                     "type": "string",
                     "format": "file-path",
@@ -225,18 +233,16 @@
                     "description": "Minimum BitScore of reverse best hits to retain hits",
                     "default": 350.0
                 },
-                "database_list": {
+                "mmseqs_gpu_exclude_dbs": {
                     "type": "string",
-                    "description": "Database list for generating GFF and GBK. Comma sepeterated list of databases to include in the annotates. Use `all` for all. Example: 'kegg,dbcan,kofam,merops,viral,camper,canthyd,fegenie,sulfur,methyl,uniref,pfam,vogdb'",
-                    "default": "all"
+                    "default": "methyl",
+                    "description": "Comma-separated protein MMseqs databases that remain on CPUs when gpu profile is selected. Use none to send every GPU-capable database to GPUs. PFAM is always CPU-only."
                 },
-                "generate_gff": {
-                    "type": "boolean",
-                    "description": "Generate GFF output for each input_fasta. This option is in development right now and may not work properly, and may not work with large numbers of inputs."
-                },
-                "generate_gbk": {
-                    "type": "boolean",
-                    "description": "Generate GBK output for each input_fasta. This option is in development right now and may not work properly, and may not work with large numbers of inputs."
+                "mmseqs_cuda_cache": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "default": "${System.getProperty('user.home')}/.nv/ComputeCache",
+                    "description": "Persistent writable CUDA JIT cache shared by MMseqs GPU tasks."
                 }
             }
         },
@@ -268,11 +274,11 @@
             "properties": {
                 "sum_ecos": {
                     "type": "string",
-                    "description": "Ecosystem to distill. Options: <eng_sys|ag> If more than one ecosystem included, they must be seperated by a comma (--sum_ecos eng_sys,ag or --sum_ecos 'eng_sys,ag')."
+                    "description": "Ecosystem to distill. Options: <eng_sys|ag|marine|gut|bgc> If more than one ecosystem included, they must be seperated by a comma (--sum_ecos eng_sys,ag or --sum_ecos 'eng_sys,ag')."
                 },
-                "distill_topic": {
+                "sum_topics": {
                     "type": "string",
-                    "description": "A way to specify a subset of topics instead of all topics. By default, if `--sumarize` is specified, all topics are included. Options:  <carbon|energy|misc|nitrogen|transport|camper|none> OR <default = carbon,energy,misc,nitrogen,transport,camper> if `--use_camper` is used, else <default = carbon,energy,misc,nitrogen,transport>. If more than one topic included, they must be seperated by a comma (--distill_topic carbon,energy or --distill_topic 'carbon,energy'). Use `none` to skip topic distillation."
+                    "description": "A way to specify a subset of topics instead of all topics. By default, if `--sumarize` is specified, all topics are included. Options:  <assim|cell|energy|env|none> OR <default = assim,cell,energy,env>. If more than one topic included, they must be seperated by a comma (--sum_topics assim,energy or --distill_topic 'assim,energy'). Use `none` to skip topic distillation."
                 },
                 "sum_custom": {
                     "type": "string",
@@ -282,19 +288,19 @@
                     "type": "string",
                     "format": "file-path",
                     "exists": true,
-                    "description": "Path to annotations tsv to distill. Required if running without annotate"
+                    "description": "Path to an annotations TSV for summarize, QC enrichment, visualization, or traits without running annotate."
                 },
                 "rrnas": {
                     "type": "string",
-                    "format": "file-path",
+                    "format": "directory-path",
                     "exists": true,
-                    "description": "Path to folder containing individual rRNA files generated with tRNAscan-SE. Can be used when running distill without call to add additional information."
+                    "description": "Path to a directory containing individual rRNA TSV files generated with Barrnap. Can be used by QC without raw FASTA input."
                 },
                 "trnas": {
                     "type": "string",
-                    "format": "file-path",
+                    "format": "directory-path",
                     "exists": true,
-                    "description": "Path to folder containging individual tRNA files generated with tRNAscan-SE. Can be used when running distill without call to add additional information."
+                    "description": "Path to a directory containing individual tRNA TSV files generated with tRNAscan-SE. Can be used by QC without raw FASTA input."
                 },
                 "distill_dummy_sheet": {
                     "type": "string",
@@ -317,9 +323,14 @@
                 },
                 "viz_rules_system": {
                     "type": "string",
-                    "description": "Choose alternative in-built rules for the visualization. This option cannot be specified if `viz_rules_tsv` is specified.",
-                    "default": "",
-                    "enum": ["default", "single"]
+                    "description": "Choose alternative in-built rules for the visualization. This option cannot be specified if `viz_rules_tsv` is specified. comma seperated list with the same options as `sum_ecos`. (ex. `--viz_rules_system ag,bgc`)",
+                    "default": ""
+                },
+                "viz_mapping_file": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Path to metaT mapping file of gene abundances in samples. Must have a column named 'Geneid' that matches the query_id column in the annotations file.",
+                    "fa_icon": "fas fa-cog"
                 }
             }
         },
@@ -356,9 +367,19 @@
                     "default": "${launchDir}/databases/kegg/",
                     "hidden": true
                 },
+                "kegg_gpu_db": {
+                    "type": "string",
+                    "default": "${launchDir}/databases/kegg_gpu/",
+                    "hidden": true
+                },
                 "uniref_db": {
                     "type": "string",
                     "default": "${launchDir}/databases/uniref/",
+                    "hidden": true
+                },
+                "uniref_gpu_db": {
+                    "type": "string",
+                    "default": "${launchDir}/databases/uniref_gpu/",
                     "hidden": true
                 },
                 "metals_db": {
@@ -376,9 +397,19 @@
                     "default": "${launchDir}/databases/card/",
                     "hidden": true
                 },
+                "card_gpu_db": {
+                    "type": "string",
+                    "default": "${launchDir}/databases/card_gpu/",
+                    "hidden": true
+                },
                 "tcdb_db": {
                     "type": "string",
                     "default": "${launchDir}/databases/tcdb/",
+                    "hidden": true
+                },
+                "tcdb_gpu_db": {
+                    "type": "string",
+                    "default": "${launchDir}/databases/tcdb_gpu/",
                     "hidden": true
                 },
                 "pfam_mmseq_db": {
@@ -391,9 +422,19 @@
                     "default": "${launchDir}/databases/merops/",
                     "hidden": true
                 },
+                "merops_gpu_db": {
+                    "type": "string",
+                    "default": "${launchDir}/databases/merops_gpu/",
+                    "hidden": true
+                },
                 "viral_db": {
                     "type": "string",
                     "default": "${launchDir}/databases/viral/",
+                    "hidden": true
+                },
+                "viral_gpu_db": {
+                    "type": "string",
+                    "default": "${launchDir}/databases/viral_gpu/",
                     "hidden": true
                 },
                 "kofam_db": {
@@ -444,6 +485,11 @@
                     "default": "${launchDir}/databases/camper/mmseqs/",
                     "hidden": true
                 },
+                "camper_mmseqs_gpu_db": {
+                    "type": "string",
+                    "default": "${launchDir}/databases/camper_gpu/",
+                    "hidden": true
+                },
                 "camper_mmseqs_list": {
                     "type": "string",
                     "default": "${launchDir}/databases/camper/mmseqs/camper_scores.tsv",
@@ -462,6 +508,11 @@
                 "canthyd_mmseqs_db": {
                     "type": "string",
                     "default": "${launchDir}/databases/canthyd/mmseqs/",
+                    "hidden": true
+                },
+                "canthyd_mmseqs_gpu_db": {
+                    "type": "string",
+                    "default": "${launchDir}/databases/cant_hyd_gpu/",
                     "hidden": true
                 },
                 "canthyd_mmseqs_list": {
@@ -487,6 +538,11 @@
                 "methyl_db": {
                     "type": "string",
                     "default": "${launchDir}/databases/methyl/",
+                    "hidden": true
+                },
+                "methyl_gpu_db": {
+                    "type": "string",
+                    "default": "${launchDir}/databases/methyl_gpu/",
                     "hidden": true
                 },
                 "sql_descriptions_db": {
@@ -588,113 +644,96 @@
                 }
             }
         },
-        "slurm_options": {
-            "title": "SLURM Options",
+        "format_mmseqs_gpu_options": {
+            "title": "Format MMseqs GPU Database Options",
             "type": "object",
-            "fa_icon": "fas fa-dna",
-            "description": "Generic options for SLURM job submission. More customized options can be configured in your own Nextflow config file. See https://www.nextflow.io/docs/latest/executor.html#slurm and example configs here: https://github.com/nf-core/configs/tree/master/conf",
+            "fa_icon": "fas fa-database",
+            "description": "Options for converting an existing protein MMseqs database into a GPU-padded database with a subset-2 index.",
             "properties": {
-                "slurm": {
-                    "type": "boolean",
-                    "description": "Launch the pipeline using the SLURM executor. Without this option, the pipeline will run in your current shell/environment."
-                },
-                "partition": {
+                "mmseqs_db_path": {
                     "type": "string",
-                    "description": "Name of the SLURM partition to use for job submission. If not provided, the default partition will be used."
+                    "format": "directory-path",
+                    "exists": true,
+                    "description": "Directory containing the existing MMseqs database."
                 },
-                "slurm_node": {
+                "mmseqs_db_name": {
                     "type": "string",
-                    "description": "Name of the SLURM Node to use for job submission. If not provided, the default node will be used."
-                },
-                "cpu_provision_limit": {
-                    "type": "integer",
-                    "description": "The largest numbers of CPUs you can provision in 1 job. Not the total CPU limit. You can control that with process size or provision limit and queue_size"
-                },
-                "mem_gb_provision_limit": {
-                    "type": "integer",
-                    "description": "The largest amount of memory you can provision in 1 job. Not the total memory limit. You can control that with process size or provision limit and queue_size"
-                },
-                "time_hr_provision_limit": {
-                    "type": "integer",
-                    "description": "The longest time a job should be provisioned for. Not the total length cutoff for all jobs. You can control that with process size or provision limit and queue_size"
+                    "pattern": "^[A-Za-z0-9._-]+$",
+                    "description": "Database prefix without the .mmsdb suffix, such as kegg or uniref."
                 }
             }
         },
         "process_options": {
-            "title": "Process Options",
+            "title": "Process resource options",
             "type": "object",
             "fa_icon": "fas fa-dna",
-            "description": "Total resource limits for a single process. Not the limit to the total resources available to the pipeline. Up to queue_size processes can run in parallel, of various sizes",
+            "description": "Per-task resource caps, optional input batching, and job arrays. Resource caps do not increase the resources requested by a process.",
             "properties": {
-                "tiny_cpus_limit": {
-                    "type": "integer",
-                    "description": "Maximum number of CPUs to use/provision for a this job size."
+                "gpu_container_options": {
+                    "type": "string",
+                    "description": "Override container GPU flags for GPU tasks. Auto-detects if not set (--gpus all for Docker, --nv for Singularity/Apptainer).",
+                    "fa_icon": "fas fa-microchip",
+                    "hidden": true
                 },
-                "small_cpus_limit": {
+                "max_cpus": {
                     "type": "integer",
-                    "description": "Maximum number of CPUs to use/provision for a this job size."
+                    "minimum": 1,
+                    "default": 24,
+                    "description": "Maximum number of CPUs that any single task can request."
                 },
-                "medium_cpus_limit": {
-                    "type": "integer",
-                    "description": "Maximum number of CPUs to use/provision for a this job size."
+                "max_memory": {
+                    "type": "string",
+                    "default": "200.GB",
+                    "pattern": "^\\d+(\\.\\d+)?\\.?\\s*(K|M|G|T)?B$",
+                    "description": "Maximum memory that any single task can request, for example '64.GB'."
                 },
-                "big_cpus_limit": {
-                    "type": "integer",
-                    "description": "Maximum number of CPUs to use/provision for a this job size."
+                "max_time": {
+                    "type": "string",
+                    "default": "168.h",
+                    "pattern": "^(\\d+\\.?\\s*(s|m|h|d|day)\\s*)+$",
+                    "description": "Maximum wall time that any single task can request, for example '48.h'."
                 },
-                "huge_cpus_limit": {
+                "call_batch_size": {
                     "type": "integer",
-                    "description": "Maximum number of CPUs to use/provision for a this job size."
+                    "minimum": 1,
+                    "default": 1,
+                    "description": "Maximum FASTA inputs processed sequentially per CALL_GENES task. 1 disables batching."
                 },
-                "tiny_gb_mem_limit": {
-                    "type": "integer",
-                    "description": "Maximum memory to use/provision for a this job size."
+                "call_batch_max_size": {
+                    "type": "string",
+                    "default": "1.GB",
+                    "pattern": "^[1-9][0-9]*\\.?\\s*(K|M|G|T)?B$",
+                    "description": "Largest individual FASTA that may join a CALL_GENES batch. Larger inputs run alone; combined batch size is ignored."
                 },
-                "small_gb_mem_limit": {
+                "rna_batch_size": {
                     "type": "integer",
-                    "description": "Maximum memory to use/provision for a this job size."
+                    "minimum": 1,
+                    "default": 1,
+                    "description": "Maximum FASTA inputs processed sequentially per tRNA or rRNA scan task. 1 disables batching."
                 },
-                "medium_gb_mem_limit": {
-                    "type": "integer",
-                    "description": "Maximum memory to use/provision for a this job size."
+                "rna_batch_max_size": {
+                    "type": "string",
+                    "default": "1.GB",
+                    "pattern": "^[1-9][0-9]*\\.?\\s*(K|M|G|T)?B$",
+                    "description": "Largest individual FASTA that may join an RNA-scan batch. Larger inputs run alone; combined batch size is ignored."
                 },
-                "big_gb_mem_limit": {
+                "search_batch_size": {
                     "type": "integer",
-                    "description": "Maximum memory to use/provision for a this job size."
+                    "minimum": 1,
+                    "default": 1,
+                    "description": "Maximum inputs searched sequentially against one database per HMM/MMseqs task. 1 disables batching. Can be combined with job arrays."
                 },
-                "huge_gb_mem_limit": {
-                    "type": "integer",
-                    "description": "Maximum memory to use/provision for a this job size."
+                "search_batch_max_size": {
+                    "type": "string",
+                    "default": "1.GB",
+                    "pattern": "^[1-9][0-9]*\\.?\\s*(K|M|G|T)?B$",
+                    "description": "Largest individual query input that may join a search batch, for example '1.GB'. Inputs above this size run alone. Database size and combined batch size are ignored. Use a positive integer and unit."
                 },
-                "tiny_hr_time_limit": {
+                "job_array_size": {
                     "type": "integer",
-                    "description": "Maximum time in hours to use/provision for a this job size."
-                },
-                "small_hr_time_limit": {
-                    "type": "integer",
-                    "description": "Maximum time in hours to use/provision for a this job size."
-                },
-                "medium_hr_time_limit": {
-                    "type": "integer",
-                    "description": "Maximum time in hours to use/provision for a this job size."
-                },
-                "big_hr_time_limit": {
-                    "type": "integer",
-                    "description": "Maximum time in hours to use/provision for a this job size."
-                },
-                "huge_hr_time_limit": {
-                    "type": "integer",
-                    "description": "Maximum time in hours to use/provision for a this job size."
-                },
-                "queue_size": {
-                    "type": "integer",
-                    "default": 10,
-                    "description": "Maximum number of jobs to submit to the queue at once."
-                },
-                "array_size": {
-                    "type": "integer",
+                    "minimum": 0,
                     "default": 0,
-                    "description": "Number of tasks to submit per SLURM job array. 0 disables (default) so the local executor is unaffected. Set when running with --slurm. Note, job arrays submit multiple jobs with the same resource requests together to be more efficent on the slurm queue. They do not batch multiple jobs together. Job arrays are about reducing slurm overheard when running many similar jobs."
+                    "description": "Maximum tasks per job array on supported executors. Values 0 and 1 disable arrays; values 2 or greater enable them for array-labelled processes."
                 }
             }
         },
@@ -711,6 +750,10 @@
                 "adjectives": {
                     "type": "boolean",
                     "description": "alias for traits."
+                },
+                "distill_topic": {
+                    "type": "string",
+                    "description": "alias for sum_topics"
                 },
                 "distill_ecosystem": {
                     "type": "string",
@@ -920,10 +963,10 @@
             "$ref": "#/$defs/format_kegg_options"
         },
         {
-            "$ref": "#/$defs/database_options"
+            "$ref": "#/$defs/format_mmseqs_gpu_options"
         },
         {
-            "$ref": "#/$defs/slurm_options"
+            "$ref": "#/$defs/database_options"
         },
         {
             "$ref": "#/$defs/process_options"

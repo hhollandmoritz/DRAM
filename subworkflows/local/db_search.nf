@@ -1,5 +1,5 @@
 //
-// Subworkflow with functionality specific to the WrightonLabCSU/dram pipeline
+// Subworkflow with functionality specific to the BortonWrightonLabs/dram pipeline
 //
 
 /*
@@ -13,17 +13,27 @@ include { COMBINE_ANNOTATIONS                           } from "../../modules/lo
 
 include { MMSEQS_INDEX                                  } from "../../modules/local/annotate/mmseqs_index.nf"
 
-// NextFlow only process with the same name in the same workflow, so either alias it or include it a different workflow
-include { MMSEQS_SEARCH as MMSEQS_SEARCH_MEROPS         } from "../../modules/local/annotate/mmseqs_search.nf"
-include { MMSEQS_SEARCH as MMSEQS_SEARCH_VIRAL          } from "../../modules/local/annotate/mmseqs_search.nf"
-include { MMSEQS_SEARCH as MMSEQS_SEARCH_CAMPER         } from "../../modules/local/annotate/mmseqs_search.nf"
-include { MMSEQS_SEARCH as MMSEQS_SEARCH_METHYL         } from "../../modules/local/annotate/mmseqs_search.nf"
-include { MMSEQS_SEARCH as MMSEQS_SEARCH_CANTHYD        } from "../../modules/local/annotate/mmseqs_search.nf"
-include { MMSEQS_SEARCH as MMSEQS_SEARCH_KEGG           } from "../../modules/local/annotate/mmseqs_search.nf"
-include { MMSEQS_SEARCH as MMSEQS_SEARCH_UNIREF         } from "../../modules/local/annotate/mmseqs_search.nf"
-include { MMSEQS_SEARCH as MMSEQS_SEARCH_PFAM           } from "../../modules/local/annotate/mmseqs_search.nf"
-include { MMSEQS_SEARCH as MMSEQS_SEARCH_CARD           } from "../../modules/local/annotate/mmseqs_search.nf"
-include { MMSEQS_SEARCH as MMSEQS_SEARCH_TCDB           } from "../../modules/local/annotate/mmseqs_search.nf"
+// One workflow alias per database; each wrapper owns batching and size aliases.
+include { MMSEQS_SEARCH_WORKFLOW as MMSEQS_MEROPS } from './mmseqs_search_workflow'
+include { MMSEQS_SEARCH_WORKFLOW as MMSEQS_VIRAL } from './mmseqs_search_workflow'
+include { MMSEQS_SEARCH_WORKFLOW as MMSEQS_CAMPER } from './mmseqs_search_workflow'
+include { MMSEQS_SEARCH_WORKFLOW as MMSEQS_METHYL } from './mmseqs_search_workflow'
+include { MMSEQS_SEARCH_WORKFLOW as MMSEQS_CANTHYD } from './mmseqs_search_workflow'
+include { MMSEQS_SEARCH_WORKFLOW as MMSEQS_KEGG } from './mmseqs_search_workflow'
+include { MMSEQS_SEARCH_WORKFLOW as MMSEQS_UNIREF } from './mmseqs_search_workflow'
+include { MMSEQS_SEARCH_WORKFLOW as MMSEQS_PFAM } from './mmseqs_search_workflow'
+include { MMSEQS_SEARCH_WORKFLOW as MMSEQS_CARD } from './mmseqs_search_workflow'
+include { MMSEQS_SEARCH_WORKFLOW as MMSEQS_TCDB } from './mmseqs_search_workflow'
+
+include { MMSEQS_SEARCH_GPU_WORKFLOW as MMSEQS_GPU_MEROPS } from './mmseqs_search_workflow'
+include { MMSEQS_SEARCH_GPU_WORKFLOW as MMSEQS_GPU_VIRAL } from './mmseqs_search_workflow'
+include { MMSEQS_SEARCH_GPU_WORKFLOW as MMSEQS_GPU_CAMPER } from './mmseqs_search_workflow'
+include { MMSEQS_SEARCH_GPU_WORKFLOW as MMSEQS_GPU_METHYL } from './mmseqs_search_workflow'
+include { MMSEQS_SEARCH_GPU_WORKFLOW as MMSEQS_GPU_CANTHYD } from './mmseqs_search_workflow'
+include { MMSEQS_SEARCH_GPU_WORKFLOW as MMSEQS_GPU_KEGG } from './mmseqs_search_workflow'
+include { MMSEQS_SEARCH_GPU_WORKFLOW as MMSEQS_GPU_UNIREF } from './mmseqs_search_workflow'
+include { MMSEQS_SEARCH_GPU_WORKFLOW as MMSEQS_GPU_CARD } from './mmseqs_search_workflow'
+include { MMSEQS_SEARCH_GPU_WORKFLOW as MMSEQS_GPU_TCDB } from './mmseqs_search_workflow'
 
 include { ADD_SQL_DESCRIPTIONS as SQL_UNIREF            } from "../../modules/local/annotate/add_sql_descriptions.nf"
 include { ADD_SQL_DESCRIPTIONS as SQL_VIRAL             } from "../../modules/local/annotate/add_sql_descriptions.nf"
@@ -32,18 +42,19 @@ include { ADD_SQL_DESCRIPTIONS as SQL_KEGG              } from "../../modules/lo
 include { ADD_SQL_DESCRIPTIONS as SQL_PFAM              } from "../../modules/local/annotate/add_sql_descriptions.nf"
 include { ADD_SQL_DESCRIPTIONS as SQL_DBCAN             } from "../../modules/local/annotate/add_sql_descriptions.nf"
 
-include { HMM_SEARCH as HMM_SEARCH_KOFAM                } from "../../modules/local/annotate/hmmsearch.nf"
-include { HMM_SEARCH as HMM_SEARCH_DRAM_DB              } from "../../modules/local/annotate/hmmsearch.nf"
-include { HMM_SEARCH as HMM_SEARCH_VOG                  } from "../../modules/local/annotate/hmmsearch.nf"
-include { HMM_SEARCH as HMM_SEARCH_CAMPER               } from "../../modules/local/annotate/hmmsearch.nf"
-include { HMM_SEARCH as HMM_SEARCH_CANTHYD              } from "../../modules/local/annotate/hmmsearch.nf"
-include { HMM_SEARCH as HMM_SEARCH_SULFUR               } from "../../modules/local/annotate/hmmsearch.nf"
-include { HMM_SEARCH as HMM_SEARCH_FEGENIE              } from "../../modules/local/annotate/hmmsearch.nf"
-include { HMM_SEARCH as HMM_SEARCH_METALS               } from "../../modules/local/annotate/hmmsearch.nf"
+include { HMM_SEARCH_WORKFLOW as HMM_KOFAM } from './hmm_search_workflow'
+include { HMM_SEARCH_WORKFLOW as HMM_DRAM_DB } from './hmm_search_workflow'
+include { HMM_SEARCH_WORKFLOW as HMM_VOG } from './hmm_search_workflow'
+include { HMM_SEARCH_WORKFLOW as HMM_CAMPER } from './hmm_search_workflow'
+include { HMM_SEARCH_WORKFLOW as HMM_CANTHYD } from './hmm_search_workflow'
+include { HMM_SEARCH_WORKFLOW as HMM_SULFUR } from './hmm_search_workflow'
+include { HMM_SEARCH_WORKFLOW as HMM_FEGENIE } from './hmm_search_workflow'
+include { HMM_SEARCH_WORKFLOW as HMM_METALS } from './hmm_search_workflow'
 
 include { ANTISMASH_ANTISMASH                           } from '../../modules/nf-core/antismash/antismash/main'
 include { RGI_MAIN                                      } from '../../modules/nf-core/rgi/main/main'
 include { RUNDBCAN_EASYSUBSTRATE                        } from '../../modules/nf-core/rundbcan/easysubstrate/main'
+include { RUNDBCAN_CAZYMEANNOTATION                     } from '../../modules/nf-core/rundbcan/cazymeannotation/main'
 
 include {checkDBVersion                                 } from '../../subworkflows/local/utils_pipeline_setup.nf'
 
@@ -56,12 +67,10 @@ include {checkDBVersion                                 } from '../../subworkflo
 workflow DB_SEARCH {
     take:
     ch_gene_locs  // channel: path(gene_locs_tsv) ]
-    ch_called_proteins  // channel: [ val(input_fasta name), path(called_proteins_file.faa) ]
-    ch_antismash_map
-    ch_fna_map
-    ch_faa_map
-    ch_gff_map
-    ch_gene_gff
+    ch_called_proteins  // channel: [ val(input_fasta name), path(called_proteins file), val(logical bytes) ]
+    ch_filtered_fasta  // channel: [ val(input_fasta name), path(filtered_fasta file), val(logical bytes) ]
+    ch_gene_gff  // channel: [ val(input_fasta name), path(gene_gff file) ]
+    ch_called_genes  // channel: [ val(input_fasta name), path(called_genes file) ]
     default_sheet // Path to dummy sheet
     use_kegg
     use_kofam
@@ -81,6 +90,7 @@ workflow DB_SEARCH {
     use_tcdb
     use_dram_db
     use_vog
+    call
 
     main:
 
@@ -134,7 +144,17 @@ workflow DB_SEARCH {
 
     def formattedOutputChannels = channel.of()
     def dbcanOutputChannels = channel.of()
-
+    use_mmseqs_gpu = workflow.profile.contains('gpu')
+    mmseqs_gpu_excluded_dbs = (params.mmseqs_gpu_exclude_dbs?.tokenize(',')?.collect { db -> db.trim().toLowerCase() } ?: []).findAll { db -> db && db != 'none' }
+    use_gpu_kegg = use_mmseqs_gpu && !mmseqs_gpu_excluded_dbs.contains('kegg')
+    use_gpu_camper = use_mmseqs_gpu && !mmseqs_gpu_excluded_dbs.contains('camper')
+    use_gpu_methyl = use_mmseqs_gpu && !mmseqs_gpu_excluded_dbs.contains('methyl')
+    use_gpu_canthyd = use_mmseqs_gpu && !mmseqs_gpu_excluded_dbs.contains('canthyd')
+    use_gpu_merops = use_mmseqs_gpu && !mmseqs_gpu_excluded_dbs.contains('merops')
+    use_gpu_uniref = use_mmseqs_gpu && !mmseqs_gpu_excluded_dbs.contains('uniref')
+    use_gpu_card = use_mmseqs_gpu && !mmseqs_gpu_excluded_dbs.contains('card')
+    use_gpu_tcdb = use_mmseqs_gpu && !mmseqs_gpu_excluded_dbs.contains('tcdb')
+    use_gpu_viral = use_mmseqs_gpu && !mmseqs_gpu_excluded_dbs.contains('viral')
     // Here we will create mmseqs2 index files for each of the inputs if we are going to do a mmseqs2 database
     // We use .val because we need to unwrap the workflow output.
     // if the .out was from a process, this could block as it waited for DB_CHANNEL_SETUP, so use with caution
@@ -142,13 +162,26 @@ workflow DB_SEARCH {
         // Use MMSEQS2 to index each called genes protein file
         MMSEQS_INDEX( ch_called_proteins )
         ch_mmseqs_query = MMSEQS_INDEX.out.mmseqs_index_out
+        ch_mmseqs_queries = ch_mmseqs_query
+            .join(ch_gene_locs)
+            .map { name, query, query_bytes, loci -> tuple(name, query, loci, query_bytes) }
     }
+
+    // All HMM databases reuse the one logical protein size measured at the
+    // CALL/input_genes boundary. The physical MMseqs index is not re-measured.
+    ch_hmm_queries = ch_called_proteins
+        .join(ch_gene_locs)
+        .map { name, proteins, protein_bytes, loci -> tuple(name, proteins, loci, protein_bytes) }
 
     // KEGG annotation
     if (use_kegg) {
-        ch_combined_query_locs_kegg = ch_mmseqs_query.join(ch_gene_locs)
-        MMSEQS_SEARCH_KEGG( ch_combined_query_locs_kegg, DB_CHANNEL_SETUP.out.ch_kegg_db, params.bit_score_threshold, params.rbh_bit_score_threshold, default_sheet, kegg_name )
-        ch_mmseqs_unformatted = MMSEQS_SEARCH_KEGG.out.mmseqs_search_formatted_out
+        if (use_gpu_kegg) {
+            MMSEQS_GPU_KEGG(ch_mmseqs_queries, DB_CHANNEL_SETUP.out.ch_kegg_db, params.bit_score_threshold, params.rbh_bit_score_threshold, default_sheet, kegg_name)
+            ch_mmseqs_unformatted = MMSEQS_GPU_KEGG.out.mmseqs_search_formatted_out
+        } else {
+            MMSEQS_KEGG(ch_mmseqs_queries, DB_CHANNEL_SETUP.out.ch_kegg_db, params.bit_score_threshold, params.rbh_bit_score_threshold, default_sheet, kegg_name)
+            ch_mmseqs_unformatted = MMSEQS_KEGG.out.mmseqs_search_formatted_out
+        }
 
         SQL_KEGG(ch_mmseqs_unformatted, kegg_name, ch_sql_descriptions_db)
         ch_mmseqs_formatted = SQL_KEGG.out.sql_formatted_hits
@@ -156,23 +189,14 @@ workflow DB_SEARCH {
     }
     // KOFAM annotation
     if (use_kofam) {
-        ch_combined_proteins_locs = ch_called_proteins.join(ch_gene_locs)
-        HMM_SEARCH_KOFAM (
-            ch_combined_proteins_locs,
-            params.kofam_e_value,
-            DB_CHANNEL_SETUP.out.ch_kofam_db,
-            ch_kofam_list,
-            true,
-            kofam_name
-            )
-        ch_hmm_formatted = HMM_SEARCH_KOFAM.out.formatted_hits
+        HMM_KOFAM(ch_hmm_queries, params.kofam_e_value, DB_CHANNEL_SETUP.out.ch_kofam_db, ch_kofam_list, true, kofam_name)
+        ch_hmm_formatted = HMM_KOFAM.out.formatted_hits
         formattedOutputChannels = formattedOutputChannels.mix(ch_hmm_formatted)
     }
     // PFAM annotation
     if (use_pfam) {
-        ch_combined_query_locs_pfam = ch_mmseqs_query.join(ch_gene_locs)
-        MMSEQS_SEARCH_PFAM( ch_combined_query_locs_pfam, DB_CHANNEL_SETUP.out.ch_pfam_mmseqs_db, params.bit_score_threshold, params.rbh_bit_score_threshold, default_sheet, pfam_name )
-        ch_mmseqs_unformatted = MMSEQS_SEARCH_PFAM.out.mmseqs_search_formatted_out
+        MMSEQS_PFAM(ch_mmseqs_queries, DB_CHANNEL_SETUP.out.ch_pfam_mmseqs_db, params.bit_score_threshold, params.rbh_bit_score_threshold, default_sheet, pfam_name)
+        ch_mmseqs_unformatted = MMSEQS_PFAM.out.mmseqs_search_formatted_out
 
         SQL_PFAM(ch_mmseqs_unformatted, pfam_name, ch_sql_descriptions_db)
         ch_mmseqs_formatted = SQL_PFAM.out.sql_formatted_hits
@@ -181,96 +205,108 @@ workflow DB_SEARCH {
 
     // dbCAN3 annotation
     if  (use_dbcan) {
-        RUNDBCAN_EASYSUBSTRATE(
-            ch_faa_map,
-            ch_gff_map,
-            DB_CHANNEL_SETUP.out.ch_dbcan_db
-        )
-        dbcanOutputChannels = dbcanOutputChannels.mix(RUNDBCAN_EASYSUBSTRATE.out.dbcanhmm_results)
-        dbcanOutputChannels = dbcanOutputChannels.mix(RUNDBCAN_EASYSUBSTRATE.out.dbcansub_results)
+        if (params.save_cgc && call) {
+            ch_dbcan_inputs = ch_called_proteins
+                .join(ch_gene_gff, by: [0])
+                .multiMap { name, called_proteins, _protein_bytes, gene_gff ->
+                    proteins:
+                        tuple([id: name], called_proteins)
+
+                    gff:
+                        tuple([id: name], gene_gff, "prodigal")
+                }
+            RUNDBCAN_EASYSUBSTRATE(
+                ch_dbcan_inputs.proteins,
+                ch_dbcan_inputs.gff,
+                DB_CHANNEL_SETUP.out.ch_dbcan_db
+            )
+            dbcanOutputChannels = dbcanOutputChannels.mix(RUNDBCAN_EASYSUBSTRATE.out.dbcanhmm_results)
+            dbcanOutputChannels = dbcanOutputChannels.mix(RUNDBCAN_EASYSUBSTRATE.out.dbcansub_results)
+        } else {
+            if (params.save_cgc && !call) {
+                log.warn("dbCAN CGC can only be ran with raw fasta files and not already called genes due to input constraints, failling back to CAZyme Annotation")
+            }
+            ch_dbcan_inputs = ch_called_proteins
+                .multiMap { name, called_proteins, _protein_bytes->
+                    proteins:
+                        tuple([id: name], called_proteins)
+                }
+            RUNDBCAN_CAZYMEANNOTATION(
+                ch_dbcan_inputs.proteins,
+                DB_CHANNEL_SETUP.out.ch_dbcan_db
+            )
+            dbcanOutputChannels = dbcanOutputChannels.mix(RUNDBCAN_CAZYMEANNOTATION.out.dbcanhmm_results)
+            dbcanOutputChannels = dbcanOutputChannels.mix(RUNDBCAN_CAZYMEANNOTATION.out.dbcansub_results)
+
+        }
+
     }
     // CAMPER annotation
     if (use_camper) {
         // HMM
-        ch_combined_proteins_locs = ch_called_proteins.join(ch_gene_locs)
-        HMM_SEARCH_CAMPER (
-            ch_combined_proteins_locs,
-            params.camper_e_value,
-            DB_CHANNEL_SETUP.out.ch_camper_hmm_db,
-            ch_camper_hmm_list,
-            false,
-            camper_name
-        )
-        ch_hmm_formatted = HMM_SEARCH_CAMPER.out.formatted_hits
+        HMM_CAMPER(ch_hmm_queries, params.camper_e_value, DB_CHANNEL_SETUP.out.ch_camper_hmm_db, ch_camper_hmm_list, false, camper_name)
+        ch_hmm_formatted = HMM_CAMPER.out.formatted_hits
         formattedOutputChannels = formattedOutputChannels.mix(ch_hmm_formatted)
 
         // MMseqs
-        ch_combined_query_locs_camper = ch_mmseqs_query.join(ch_gene_locs)
-        MMSEQS_SEARCH_CAMPER( ch_combined_query_locs_camper, DB_CHANNEL_SETUP.out.ch_camper_mmseqs_db, params.bit_score_threshold, params.rbh_bit_score_threshold, DB_CHANNEL_SETUP.out.ch_camper_mmseqs_list, camper_name )
-        ch_mmseqs_formatted = MMSEQS_SEARCH_CAMPER.out.mmseqs_search_formatted_out
+        if (use_gpu_camper) {
+            MMSEQS_GPU_CAMPER(ch_mmseqs_queries, DB_CHANNEL_SETUP.out.ch_camper_mmseqs_db, params.bit_score_threshold, params.rbh_bit_score_threshold, DB_CHANNEL_SETUP.out.ch_camper_mmseqs_list, camper_name)
+            ch_mmseqs_formatted = MMSEQS_GPU_CAMPER.out.mmseqs_search_formatted_out
+        } else {
+            MMSEQS_CAMPER(ch_mmseqs_queries, DB_CHANNEL_SETUP.out.ch_camper_mmseqs_db, params.bit_score_threshold, params.rbh_bit_score_threshold, DB_CHANNEL_SETUP.out.ch_camper_mmseqs_list, camper_name)
+            ch_mmseqs_formatted = MMSEQS_CAMPER.out.mmseqs_search_formatted_out
+        }
         formattedOutputChannels = formattedOutputChannels.mix(ch_mmseqs_formatted)
     }
     // FeGenie annotation
     if (use_fegenie) {
-        ch_combined_proteins_locs = ch_called_proteins.join(ch_gene_locs)
-        HMM_SEARCH_FEGENIE (
-            ch_combined_proteins_locs,
-            params.fegenie_e_value,
-            DB_CHANNEL_SETUP.out.ch_fegenie_db,
-            default_sheet,
-            false,
-            fegenie_name
-            )
-        ch_hmm_formatted = HMM_SEARCH_FEGENIE.out.formatted_hits
+        HMM_FEGENIE(ch_hmm_queries, params.fegenie_e_value, DB_CHANNEL_SETUP.out.ch_fegenie_db, default_sheet, false, fegenie_name)
+        ch_hmm_formatted = HMM_FEGENIE.out.formatted_hits
         formattedOutputChannels = formattedOutputChannels.mix(ch_hmm_formatted)
     }
     // Methyl annotation
     if (use_methyl) {
-        ch_combined_query_locs_methyl = ch_mmseqs_query.join(ch_gene_locs)
-        MMSEQS_SEARCH_METHYL( ch_combined_query_locs_methyl, DB_CHANNEL_SETUP.out.ch_methyl_db, params.bit_score_threshold, params.rbh_bit_score_threshold, default_sheet, methyl_name )
-        ch_mmseqs_formatted = MMSEQS_SEARCH_METHYL.out.mmseqs_search_formatted_out
+        if (use_gpu_methyl) {
+            MMSEQS_GPU_METHYL(ch_mmseqs_queries, DB_CHANNEL_SETUP.out.ch_methyl_db, params.bit_score_threshold, params.rbh_bit_score_threshold, default_sheet, methyl_name)
+            ch_mmseqs_formatted = MMSEQS_GPU_METHYL.out.mmseqs_search_formatted_out
+        } else {
+            MMSEQS_METHYL(ch_mmseqs_queries, DB_CHANNEL_SETUP.out.ch_methyl_db, params.bit_score_threshold, params.rbh_bit_score_threshold, default_sheet, methyl_name)
+            ch_mmseqs_formatted = MMSEQS_METHYL.out.mmseqs_search_formatted_out
+        }
         formattedOutputChannels = formattedOutputChannels.mix(ch_mmseqs_formatted)
     }
     // CANT-HYD annotation
     if (use_canthyd) {
         // MMseqs
-        ch_combined_query_locs_canthyd = ch_mmseqs_query.join(ch_gene_locs)
-        MMSEQS_SEARCH_CANTHYD( ch_combined_query_locs_canthyd, DB_CHANNEL_SETUP.out.ch_canthyd_mmseqs_db, params.bit_score_threshold, params.rbh_bit_score_threshold, DB_CHANNEL_SETUP.out.ch_canthyd_mmseqs_list, canthyd_name )
-        ch_mmseqs_formatted = MMSEQS_SEARCH_CANTHYD.out.mmseqs_search_formatted_out
+        if (use_gpu_canthyd) {
+            MMSEQS_GPU_CANTHYD(ch_mmseqs_queries, DB_CHANNEL_SETUP.out.ch_canthyd_mmseqs_db, params.bit_score_threshold, params.rbh_bit_score_threshold, DB_CHANNEL_SETUP.out.ch_canthyd_mmseqs_list, canthyd_name)
+            ch_mmseqs_formatted = MMSEQS_GPU_CANTHYD.out.mmseqs_search_formatted_out
+        } else {
+            MMSEQS_CANTHYD(ch_mmseqs_queries, DB_CHANNEL_SETUP.out.ch_canthyd_mmseqs_db, params.bit_score_threshold, params.rbh_bit_score_threshold, DB_CHANNEL_SETUP.out.ch_canthyd_mmseqs_list, canthyd_name)
+            ch_mmseqs_formatted = MMSEQS_CANTHYD.out.mmseqs_search_formatted_out
+        }
         formattedOutputChannels = formattedOutputChannels.mix(ch_mmseqs_formatted)
 
         //HMM
-        ch_combined_proteins_locs = ch_called_proteins.join(ch_gene_locs)
-        HMM_SEARCH_CANTHYD (
-            ch_combined_proteins_locs,
-            params.canthyd_e_value,
-            DB_CHANNEL_SETUP.out.ch_canthyd_hmm_db,
-            ch_canthyd_hmm_list,
-            false,
-            canthyd_name
-            )
-        ch_hmm_formatted = HMM_SEARCH_CANTHYD.out.formatted_hits
+        HMM_CANTHYD(ch_hmm_queries, params.canthyd_e_value, DB_CHANNEL_SETUP.out.ch_canthyd_hmm_db, ch_canthyd_hmm_list, false, canthyd_name)
+        ch_hmm_formatted = HMM_CANTHYD.out.formatted_hits
         formattedOutputChannels = formattedOutputChannels.mix(ch_hmm_formatted)
     }
     // Sulfur annotation
     if (use_sulfur) {
-        ch_combined_proteins_locs = ch_called_proteins.join(ch_gene_locs)
-        HMM_SEARCH_SULFUR (
-            ch_combined_proteins_locs,
-            params.sulfur_e_value,
-            DB_CHANNEL_SETUP.out.ch_sulfur_db,
-            default_sheet,
-            false,
-            sulfur_name
-            )
-        ch_hmm_formatted = HMM_SEARCH_SULFUR.out.formatted_hits
+        HMM_SULFUR(ch_hmm_queries, params.sulfur_e_value, DB_CHANNEL_SETUP.out.ch_sulfur_db, default_sheet, false, sulfur_name)
+        ch_hmm_formatted = HMM_SULFUR.out.formatted_hits
         formattedOutputChannels = formattedOutputChannels.mix(ch_hmm_formatted)
     }
     // MEROPS annotation
     if (use_merops) {
-        ch_combined_query_locs_merops = ch_mmseqs_query.join(ch_gene_locs)
-        MMSEQS_SEARCH_MEROPS( ch_combined_query_locs_merops, DB_CHANNEL_SETUP.out.ch_merops_db, params.bit_score_threshold, params.rbh_bit_score_threshold, default_sheet, merops_name )
-        ch_mmseqs_unformatted = MMSEQS_SEARCH_MEROPS.out.mmseqs_search_formatted_out
+        if (use_gpu_merops) {
+            MMSEQS_GPU_MEROPS(ch_mmseqs_queries, DB_CHANNEL_SETUP.out.ch_merops_db, params.bit_score_threshold, params.rbh_bit_score_threshold, default_sheet, merops_name)
+            ch_mmseqs_unformatted = MMSEQS_GPU_MEROPS.out.mmseqs_search_formatted_out
+        } else {
+            MMSEQS_MEROPS(ch_mmseqs_queries, DB_CHANNEL_SETUP.out.ch_merops_db, params.bit_score_threshold, params.rbh_bit_score_threshold, default_sheet, merops_name)
+            ch_mmseqs_unformatted = MMSEQS_MEROPS.out.mmseqs_search_formatted_out
+        }
 
         SQL_MEROPS(ch_mmseqs_unformatted, merops_name, ch_sql_descriptions_db)
         ch_mmseqs_formatted = SQL_MEROPS.out.sql_formatted_hits
@@ -278,9 +314,13 @@ workflow DB_SEARCH {
     }
     // Uniref annotation
     if (use_uniref) {
-        ch_combined_query_locs_uniref = ch_mmseqs_query.join(ch_gene_locs)
-        MMSEQS_SEARCH_UNIREF( ch_combined_query_locs_uniref, DB_CHANNEL_SETUP.out.ch_uniref_db, params.bit_score_threshold, params.rbh_bit_score_threshold, default_sheet, uniref_name )
-        ch_mmseqs_unformatted = MMSEQS_SEARCH_UNIREF.out.mmseqs_search_formatted_out
+        if (use_gpu_uniref) {
+            MMSEQS_GPU_UNIREF(ch_mmseqs_queries, DB_CHANNEL_SETUP.out.ch_uniref_db, params.bit_score_threshold, params.rbh_bit_score_threshold, default_sheet, uniref_name)
+            ch_mmseqs_unformatted = MMSEQS_GPU_UNIREF.out.mmseqs_search_formatted_out
+        } else {
+            MMSEQS_UNIREF(ch_mmseqs_queries, DB_CHANNEL_SETUP.out.ch_uniref_db, params.bit_score_threshold, params.rbh_bit_score_threshold, default_sheet, uniref_name)
+            ch_mmseqs_unformatted = MMSEQS_UNIREF.out.mmseqs_search_formatted_out
+        }
 
         SQL_UNIREF(ch_mmseqs_unformatted, uniref_name, ch_sql_descriptions_db)
         ch_mmseqs_formatted = SQL_UNIREF.out.sql_formatted_hits
@@ -288,73 +328,83 @@ workflow DB_SEARCH {
     }
     // Metals annotation
     if (use_metals) {
-        ch_combined_proteins_locs = ch_called_proteins.join(ch_gene_locs)
-        HMM_SEARCH_METALS (
-            ch_combined_proteins_locs,
-            params.metals_e_value,
-            DB_CHANNEL_SETUP.out.ch_metals_db,
-            default_sheet,
-            false,
-            metals_name
-            )
-        ch_hmm_formatted = HMM_SEARCH_METALS.out.formatted_hits
+        HMM_METALS(ch_hmm_queries, params.metals_e_value, DB_CHANNEL_SETUP.out.ch_metals_db, default_sheet, false, metals_name)
+        ch_hmm_formatted = HMM_METALS.out.formatted_hits
         formattedOutputChannels = formattedOutputChannels.mix(ch_hmm_formatted)
     }
     // antiSMASH
     if (use_antismash) {
-        ANTISMASH_ANTISMASH(ch_antismash_map, DB_CHANNEL_SETUP.out.ch_antismash_db, ch_gene_gff)
+        if (call) {
+            ch_filtered_fasta.ifEmpty{ log.warn("antiSMASH requires raw fasta files, skipping antismash") }
+            ch_antismash_inputs = ch_filtered_fasta
+                .join(ch_gene_gff, by: [0])
+                .multiMap { name, filtered_fasta, _fasta_bytes, gene_gff ->
+                    fasta:
+                        tuple([id: name], filtered_fasta)
+
+                    gff:
+                        gene_gff
+                }
+            ANTISMASH_ANTISMASH(
+                ch_antismash_inputs.fasta,
+                DB_CHANNEL_SETUP.out.ch_antismash_db,
+                ch_antismash_inputs.gff
+            )
+        } else {
+            log.warn("antiSMASH can only be ran with raw fasta files and not already called genes due to input constraints")
+        }
     }
     // RGI with CARD
     if (use_rgi) {
-        RGI_MAIN(ch_fna_map, DB_CHANNEL_SETUP.out.ch_card_db, [])
+        RGI_MAIN(
+            ch_called_genes.map { name, called_genes -> tuple([id: name], called_genes)},
+            DB_CHANNEL_SETUP.out.ch_card_db,
+            []
+        )
     }
     // CARD annotation
     if (use_card) {
-        ch_combined_query_locs_card = ch_mmseqs_query.join(ch_gene_locs)
-        MMSEQS_SEARCH_CARD( ch_combined_query_locs_card, DB_CHANNEL_SETUP.out.ch_card_db, params.bit_score_threshold, params.rbh_bit_score_threshold, default_sheet, card_name )
-        ch_mmseqs_formatted = MMSEQS_SEARCH_CARD.out.mmseqs_search_formatted_out
+        if (use_gpu_card) {
+            MMSEQS_GPU_CARD(ch_mmseqs_queries, DB_CHANNEL_SETUP.out.ch_card_mmseqs_db, params.bit_score_threshold, params.rbh_bit_score_threshold, default_sheet, card_name)
+            ch_mmseqs_formatted = MMSEQS_GPU_CARD.out.mmseqs_search_formatted_out
+        } else {
+            MMSEQS_CARD(ch_mmseqs_queries, DB_CHANNEL_SETUP.out.ch_card_mmseqs_db, params.bit_score_threshold, params.rbh_bit_score_threshold, default_sheet, card_name)
+            ch_mmseqs_formatted = MMSEQS_CARD.out.mmseqs_search_formatted_out
+        }
         formattedOutputChannels = formattedOutputChannels.mix(ch_mmseqs_formatted)
     }
     // TCDB annotation
     if (use_tcdb) {
-        ch_combined_query_locs_tcdb = ch_mmseqs_query.join(ch_gene_locs)
-        MMSEQS_SEARCH_TCDB( ch_combined_query_locs_tcdb, DB_CHANNEL_SETUP.out.ch_tcdb_db, params.bit_score_threshold, params.rbh_bit_score_threshold, default_sheet, tcdb_name )
-        ch_mmseqs_formatted = MMSEQS_SEARCH_TCDB.out.mmseqs_search_formatted_out
+        if (use_gpu_tcdb) {
+            MMSEQS_GPU_TCDB(ch_mmseqs_queries, DB_CHANNEL_SETUP.out.ch_tcdb_db, params.bit_score_threshold, params.rbh_bit_score_threshold, default_sheet, tcdb_name)
+            ch_mmseqs_formatted = MMSEQS_GPU_TCDB.out.mmseqs_search_formatted_out
+        } else {
+            MMSEQS_TCDB(ch_mmseqs_queries, DB_CHANNEL_SETUP.out.ch_tcdb_db, params.bit_score_threshold, params.rbh_bit_score_threshold, default_sheet, tcdb_name)
+            ch_mmseqs_formatted = MMSEQS_TCDB.out.mmseqs_search_formatted_out
+        }
         formattedOutputChannels = formattedOutputChannels.mix(ch_mmseqs_formatted)
     }
     // DRAM DB annotation
-     if (use_dram_db) {
-        ch_combined_proteins_locs = ch_called_proteins.join(ch_gene_locs)
-        HMM_SEARCH_DRAM_DB (
-            ch_combined_proteins_locs,
-            "",  // No e value, skip e value flag
-            DB_CHANNEL_SETUP.out.ch_dram_db,
-            ch_dram_db_hmm_list,
-            false,
-            dram_db_name
-            )
-        ch_hmm_formatted = HMM_SEARCH_DRAM_DB.out.formatted_hits
+    if (use_dram_db) {
+        HMM_DRAM_DB(ch_hmm_queries, "", DB_CHANNEL_SETUP.out.ch_dram_db, ch_dram_db_hmm_list, false, dram_db_name)
+        ch_hmm_formatted = HMM_DRAM_DB.out.formatted_hits
         formattedOutputChannels = formattedOutputChannels.mix(ch_hmm_formatted)
     }
     // VOGdb annotation
     if (use_vog) {
-        ch_combined_proteins_locs = ch_called_proteins.join(ch_gene_locs)
-        HMM_SEARCH_VOG (
-            ch_combined_proteins_locs,
-            params.vog_e_value,
-            DB_CHANNEL_SETUP.out.ch_vogdb_db,
-            default_sheet,
-            false,
-            vogdb_name
-            )
-        ch_hmm_formatted = HMM_SEARCH_VOG.out.formatted_hits
+        HMM_VOG(ch_hmm_queries, params.vog_e_value, DB_CHANNEL_SETUP.out.ch_vogdb_db, default_sheet, false, vogdb_name)
+        ch_hmm_formatted = HMM_VOG.out.formatted_hits
         formattedOutputChannels = formattedOutputChannels.mix(ch_hmm_formatted)
     }
     // Viral annotation
     if (params.use_viral) {
-        ch_combined_query_locs_viral = ch_mmseqs_query.join(ch_gene_locs)
-        MMSEQS_SEARCH_VIRAL( ch_combined_query_locs_viral, DB_CHANNEL_SETUP.out.ch_viral_db, params.bit_score_threshold,  params.rbh_bit_score_threshold,default_sheet, viral_name )
-        ch_mmseqs_unformatted = MMSEQS_SEARCH_VIRAL.out.mmseqs_search_formatted_out
+        if (use_gpu_viral) {
+            MMSEQS_GPU_VIRAL(ch_mmseqs_queries, DB_CHANNEL_SETUP.out.ch_viral_db, params.bit_score_threshold, params.rbh_bit_score_threshold, default_sheet, viral_name)
+            ch_mmseqs_unformatted = MMSEQS_GPU_VIRAL.out.mmseqs_search_formatted_out
+        } else {
+            MMSEQS_VIRAL(ch_mmseqs_queries, DB_CHANNEL_SETUP.out.ch_viral_db, params.bit_score_threshold, params.rbh_bit_score_threshold, default_sheet, viral_name)
+            ch_mmseqs_unformatted = MMSEQS_VIRAL.out.mmseqs_search_formatted_out
+        }
 
         SQL_VIRAL(ch_mmseqs_unformatted, viral_name, ch_sql_descriptions_db)
         ch_mmseqs_formatted = SQL_VIRAL.out.sql_formatted_hits
@@ -401,6 +451,18 @@ workflow DB_CHANNEL_SETUP {
 
     main:
 
+
+    use_mmseqs_gpu = workflow.profile.contains('gpu')
+    mmseqs_gpu_excluded_dbs = (params.mmseqs_gpu_exclude_dbs?.tokenize(',')?.collect { db -> db.trim().toLowerCase() } ?: []).findAll { db -> db && db != 'none' }
+    use_gpu_kegg = use_mmseqs_gpu && !mmseqs_gpu_excluded_dbs.contains('kegg')
+    use_gpu_camper = use_mmseqs_gpu && !mmseqs_gpu_excluded_dbs.contains('camper')
+    use_gpu_methyl = use_mmseqs_gpu && !mmseqs_gpu_excluded_dbs.contains('methyl')
+    use_gpu_canthyd = use_mmseqs_gpu && !mmseqs_gpu_excluded_dbs.contains('canthyd')
+    use_gpu_merops = use_mmseqs_gpu && !mmseqs_gpu_excluded_dbs.contains('merops')
+    use_gpu_uniref = use_mmseqs_gpu && !mmseqs_gpu_excluded_dbs.contains('uniref')
+    use_gpu_card = use_mmseqs_gpu && !mmseqs_gpu_excluded_dbs.contains('card')
+    use_gpu_tcdb = use_mmseqs_gpu && !mmseqs_gpu_excluded_dbs.contains('tcdb')
+    use_gpu_viral = use_mmseqs_gpu && !mmseqs_gpu_excluded_dbs.contains('viral')
     index_mmseqs = false
     ch_kegg_db = channel.empty()
     ch_kofam_db = channel.empty()
@@ -416,6 +478,7 @@ workflow DB_CHANNEL_SETUP {
     ch_metals_db = channel.empty()
     ch_antismash_db = channel.empty()
     ch_card_db = channel.empty()
+    ch_card_mmseqs_db = channel.empty()
     ch_tcdb_db = channel.empty()
     ch_dram_db = channel.empty()
     ch_methyl_db = channel.empty()
@@ -427,7 +490,8 @@ workflow DB_CHANNEL_SETUP {
     ch_viral_db = channel.empty()
 
     if (use_kegg) {
-        ch_kegg_db = file(params.kegg_db).exists() ? file(params.kegg_db) : error("Error: If using --annotate, you must supply prebuilt databases. KEGG database file not found at ${params.kegg_db}")
+        kegg_db_path = use_gpu_kegg ? params.kegg_gpu_db : params.kegg_db
+        ch_kegg_db = file(kegg_db_path).exists() ? file(kegg_db_path) : error("Error: If using --annotate, you must supply prebuilt databases. KEGG ${use_gpu_kegg ? 'gpu' : 'cpu'} database file not found at ${kegg_db_path}")
         index_mmseqs = true
     }
 
@@ -442,13 +506,15 @@ workflow DB_CHANNEL_SETUP {
 
     if (use_camper) {
         ch_camper_hmm_db = file(params.camper_hmm_db).exists() ? file(params.camper_hmm_db) : error("Error: If using --annotate, you must supply prebuilt databases. CAMPER HMM database file not found at ${params.camper_hmm_db}")
-        ch_camper_mmseqs_db = file(params.camper_mmseqs_db).exists() ? file(params.camper_mmseqs_db) : error("Error: If using --annotate, you must supply prebuilt databases. CAMPER MMseqs2 database file not found at ${params.camper_mmseqs_db}")
+        camper_mmseqs_db_path = use_gpu_camper ? params.camper_mmseqs_gpu_db : params.camper_mmseqs_db
+        ch_camper_mmseqs_db = file(camper_mmseqs_db_path).exists() ? file(camper_mmseqs_db_path) : error("Error: If using --annotate, you must supply prebuilt databases. CAMPER MMseqs2 ${use_gpu_camper ? 'gpu' : 'cpu'} database file not found at ${camper_mmseqs_db_path}")
         index_mmseqs = true
         ch_camper_mmseqs_list = file(params.camper_mmseqs_list)
     }
 
     if (use_merops) {
-        ch_merops_db = file(params.merops_db).exists() ? file(params.merops_db) : error("Error: If using --annotate, you must supply prebuilt databases. MEROPS database file not found at ${params.merops_db}")
+        merops_db_path = use_gpu_merops ? params.merops_gpu_db : params.merops_db
+        ch_merops_db = file(merops_db_path).exists() ? file(merops_db_path) : error("Error: If using --annotate, you must supply prebuilt databases. MEROPS ${use_gpu_merops ? 'gpu' : 'cpu'} database file not found at ${merops_db_path}")
         index_mmseqs = true
     }
 
@@ -466,7 +532,8 @@ workflow DB_CHANNEL_SETUP {
     }
 
     if (use_uniref) {
-        ch_uniref_db = file(params.uniref_db).exists() ? file(params.uniref_db) : error("Error: If using --annotate, you must supply prebuilt databases. UNIREF database file not found at ${params.uniref_db}")
+        uniref_db_path = use_gpu_uniref ? params.uniref_gpu_db : params.uniref_db
+        ch_uniref_db = file(uniref_db_path).exists() ? file(uniref_db_path) : error("Error: If using --annotate, you must supply prebuilt databases. UNIREF ${use_gpu_uniref ? 'gpu' : 'cpu'} database file not found at ${uniref_db_path}")
         index_mmseqs = true
     }
 
@@ -478,16 +545,19 @@ workflow DB_CHANNEL_SETUP {
         ch_antismash_db = file(params.antismash_db).exists() ? file(params.antismash_db) : error("Error: If using --annotate, you must supply prebuilt databases. antismash database file not found at ${params.antismash_db}")
     }
 
-    if (use_rgi || use_card) {
+    if (use_rgi) {
         ch_card_db = file(params.card_db).exists() ? file(params.card_db) : error("Error: If using --annotate, you must supply prebuilt databases. rgi database file not found at ${params.card_db}")
-        // rgi software uses the raw fasta, but card search we use the mmseqs database
-        if (use_card) {
-            index_mmseqs = true
-        }
+    }
+
+    if (use_card) {
+        card_mmseqs_db_path = use_gpu_card ? params.card_gpu_db : params.card_db
+        ch_card_mmseqs_db = file(card_mmseqs_db_path).exists() ? file(card_mmseqs_db_path) : error("Error: If using --annotate, you must supply prebuilt databases. CARD MMseqs2 ${use_gpu_card ? 'gpu' : 'cpu'} database file not found at ${card_mmseqs_db_path}")
+        index_mmseqs = true
     }
 
     if (use_tcdb) {
-        ch_tcdb_db = file(params.tcdb_db).exists() ? file(params.tcdb_db) : error("Error: If using --annotate, you must supply prebuilt databases. tcdb database file not found at ${params.tcdb_db}")
+        tcdb_db_path = use_gpu_tcdb ? params.tcdb_gpu_db : params.tcdb_db
+        ch_tcdb_db = file(tcdb_db_path).exists() ? file(tcdb_db_path) : error("Error: If using --annotate, you must supply prebuilt databases. TCDB ${use_gpu_tcdb ? 'gpu' : 'cpu'} database file not found at ${tcdb_db_path}")
         index_mmseqs = true
     }
 
@@ -502,7 +572,8 @@ workflow DB_CHANNEL_SETUP {
     }
 
     if (use_methyl) {
-        ch_methyl_db = file(params.methyl_db).exists() ? file(params.methyl_db) : error("Error: If using --annotate, you must supply prebuilt databases. METHYL database file not found at ${params.methyl_db}")
+        methyl_db_path = use_gpu_methyl ? params.methyl_gpu_db : params.methyl_db
+        ch_methyl_db = file(methyl_db_path).exists() ? file(methyl_db_path) : error("Error: If using --annotate, you must supply prebuilt databases. METHYL ${use_gpu_methyl ? 'gpu' : 'cpu'} database file not found at ${methyl_db_path}")
         index_mmseqs = true
     }
 
@@ -512,7 +583,8 @@ workflow DB_CHANNEL_SETUP {
 
     if (use_canthyd) {
         ch_canthyd_hmm_db = file(params.canthyd_hmm_db).exists() ? file(params.canthyd_hmm_db) : error("Error: If using --annotate, you must supply prebuilt databases. CANT_HYD HMM database file not found at ${params.canthyd_hmm_db}")
-        ch_canthyd_mmseqs_db = file(params.canthyd_mmseqs_db).exists() ? file(params.canthyd_mmseqs_db) : error("Error: If using --annotate, you must supply prebuilt databases. CANT_HYD MMseqs database file not found at ${params.canthyd_mmseqs_db}")
+        canthyd_mmseqs_db_path = use_gpu_canthyd ? params.canthyd_mmseqs_gpu_db : params.canthyd_mmseqs_db
+        ch_canthyd_mmseqs_db = file(canthyd_mmseqs_db_path).exists() ? file(canthyd_mmseqs_db_path) : error("Error: If using --annotate, you must supply prebuilt databases. CANT_HYD MMseqs ${use_gpu_canthyd ? 'gpu' : 'cpu'} database file not found at ${canthyd_mmseqs_db_path}")
         index_mmseqs = true
         ch_canthyd_mmseqs_list = file(params.canthyd_mmseqs_list)
     }
@@ -522,7 +594,8 @@ workflow DB_CHANNEL_SETUP {
     }
 
     if (params.use_viral) {
-        ch_viral_db = file(params.viral_db).exists() ? file(params.viral_db) : error("Error: If using --annotate, you must supply prebuilt databases. viral database file not found at ${params.viral_db}")
+        viral_db_path = use_gpu_viral ? params.viral_gpu_db : params.viral_db
+        ch_viral_db = file(viral_db_path).exists() ? file(viral_db_path) : error("Error: If using --annotate, you must supply prebuilt databases. viral ${use_gpu_viral ? 'gpu' : 'cpu'} database file not found at ${viral_db_path}")
         index_mmseqs = true
     }
 
@@ -541,6 +614,7 @@ workflow DB_CHANNEL_SETUP {
     ch_metals_db
     ch_antismash_db
     ch_card_db
+    ch_card_mmseqs_db
     ch_tcdb_db
     ch_dram_db
     ch_methyl_db
