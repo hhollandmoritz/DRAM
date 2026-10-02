@@ -44,6 +44,7 @@ include { HMM_SEARCH as HMM_SEARCH_METALS               } from "../../modules/lo
 include { ANTISMASH_ANTISMASH                           } from '../../modules/nf-core/antismash/antismash/main'
 include { RGI_MAIN                                      } from '../../modules/nf-core/rgi/main/main'
 include { RUNDBCAN_EASYSUBSTRATE                        } from '../../modules/nf-core/rundbcan/easysubstrate/main'
+include { RUN_EGGNOG                                    } from '../../modules/nf-core/eggnogmapper/main'
 
 include {checkDBVersion                                 } from '../../subworkflows/local/utils_pipeline_setup.nf'
 
@@ -81,6 +82,7 @@ workflow DB_SEARCH {
     use_tcdb
     use_dram_db
     use_vog
+    use_eggnog
 
     main:
 
@@ -102,7 +104,8 @@ workflow DB_SEARCH {
         use_card,
         use_tcdb,
         use_dram_db,
-        use_vog
+        use_vog,
+        use_eggnog
 
     )
 
@@ -189,6 +192,20 @@ workflow DB_SEARCH {
         dbcanOutputChannels = dbcanOutputChannels.mix(RUNDBCAN_EASYSUBSTRATE.out.dbcanhmm_results)
         dbcanOutputChannels = dbcanOutputChannels.mix(RUNDBCAN_EASYSUBSTRATE.out.dbcansub_results)
     }
+    // EggNOG annotation HANNAH START HERE:
+    if (use_eggnog) {
+        ch_eggnog_input = ch_called_proteins.map {
+            name, proteins ->
+            tuple([id: name], proteins)
+        }
+
+        EGGNOGMAPPER(
+            ch_eggnog_input,
+            tuple('diamond', DB_CHANNEL_SETUP.out.ch_eggnog_dmnd_db),
+            DB_CHANNEL_SETUP.out.ch_eggnog_data_dir
+        )
+    }
+
     // CAMPER annotation
     if (use_camper) {
         // HMM
