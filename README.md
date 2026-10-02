@@ -9,10 +9,24 @@ Here you will find give you basic instructions for running DRAM2, but for full d
  <img src="assets/images/DRAM2_large.png" width="600" height="600" alt="DRAM v2 logo">
 </p>
 
+<<<<<<< HEAD
 ## ⚠️ DRAM2 is currently under active development and usage is at your own risk. ⚠️
 
 ## DRAM2 Overview
 DRAM2 (Distilling and Refining Annotations of Metabolism, version 2) is a tool for annotating genomic and metagenomic assemblies (e.g., scaffolds or contigs) as well as predicted genes (nucleotide or amino acid sequences). It organizes genome annotations into metabolic functions across three levels of increasing interpretation: (1) **ANNOTATE**, (2) **SUMMARIZE**, and (3) **VISUALIZE**. This workflow enables the analysis of large numbers of microbial genomes or metagenomes, highlighting functional guilds and supporting inference of organismal metabolism across datasets.
+=======
+### DRAM v2 Development Note
+
+The DRAM development team is actively working on DRAM v2. We do not anticipate adding any additional functionality to DRAM, i.e. DRAM v1. Features requested for DRAM1 will be added to DRAM v2, to the best of our ability and as appropriate. 
+
+#### DRAM v2 Public Beta
+
+DRAM v2 is now open for public beta testing. You can try out DRAM v2 by heading over to the dev branch of this [repository](https://github.com/WrightonLabCSU/DRAM/tree/dev)
+
+DRAM v2 was implemented in [Nextflow](https://www.nextflow.io) due to its innate scalability on HPCs and containerization, ensuring rigorous reproducibility and version control, thus making it ideally suited for high-performance computing environments. 
+
+Additionall, DRAM v2 has a [readthedocs](https://dramit.readthedocs.io/en/latest/)
+>>>>>>> master
 
 During the **ANNOTATE** stage, DRAM2 identifies genes in input sequences and annotates them using multiple databases, including [KEGG](https://www.kegg.jp/) (if provided by the user), [UniRef90](https://www.uniprot.org/), [PFAM](https://pfam.xfam.org/), [dbCAN3](http://bcb.unl.edu/dbCAN2/), [RefSeq Viral](https://www.ncbi.nlm.nih.gov/genome/viruses/), [VOGDB](http://vogdb.org/), [MEROPS](https://www.ebi.ac.uk/merops/), and optional user-defined databases. A full list of available annotation databases can be found here: [WrightonLabCSU/dram pipeline parameters](https://dramit.readthedocs.io/en/latest/params_doc.html#pipeline-steps). ANNOTATE then integrates results across all databases, increasing annotation coverage and yielding ~25% more database hits than commonly used annotators such as DFAST, MetaERG, and Prokka.
 
