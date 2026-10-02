@@ -15,8 +15,10 @@ work/
 results/
 
 # DRAM input folders
-assemblies/
-databases/
+assemblies/*
+databases/*
+dbcan_staging/*
+DRAM2-format-kegg/*
 
 # Visualization Output Files
 product.html
