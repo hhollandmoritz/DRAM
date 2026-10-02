@@ -1,9 +1,11 @@
-include { RENAME_FASTA           } from "../../modules/local/rename/rename_fasta.nf"
 include { RENAME_PROTEINS        } from "../../modules/local/rename/rename_proteins.nf"
+include { RENAME_PROTEINS as RENAME_FNA       } from "../../modules/local/rename/rename_proteins.nf"
 include { CALL                   } from "../../subworkflows/local/call.nf"
-include { QC                     } from "../../subworkflows/local/qc.nf"
 include { DB_SEARCH              } from "../../subworkflows/local/db_search.nf"
 include { GENE_LOCS              } from "../../modules/local/annotate/gene_locs.nf"
+include { GENERATE_GFF  } from "../../modules/local/add_and_combine/generate_gff.nf"
+include { resourceBytes } from './utils_resource_classes.nf'
+include { batchManifestToTuples; collectNamePathTuples } from './utils_channels.nf'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     SUBWORKFLOW TO ANNOTATE
@@ -12,7 +14,7 @@ include { GENE_LOCS              } from "../../modules/local/annotate/gene_locs.
 
 workflow ANNOTATE {
     take:
-    ch_fasta  // channel: [ val(input_fasta name), path(fasta) ]
+    ch_fasta  // channel: [ val(input_fasta name), path(fasta), val(logical bytes) ]
     default_sheet // Path to dummy sheet
     call     // boolean: whether gene calling flag is set
     use_kegg
@@ -36,42 +38,18 @@ workflow ANNOTATE {
 
     main:
     // n_fastas = 0
-    ch_rrna_collected = default_sheet
-    ch_trna_collected = default_sheet
     ch_combined_annotations = default_sheet
 
     ch_quast_stats = default_sheet
-    ch_collected_fna = default_sheet
-    ch_gene_gff = default_sheet
-    ch_filtered_fasta = default_sheet
-    ch_called_genes = default_sheet
+    ch_gene_gff = channel.empty()
+    ch_filtered_fasta = channel.empty()
+    ch_called_genes = channel.empty()
 
     if (call){
-        fasta_name = ch_fasta.map { it[0] }
-        fasta_files = ch_fasta.map { it[1] }
-
-        // n_fastas = file("$params.input_fasta/${params.fasta_fmt}").size()
-
-        if(params.rename) {
-            // We need to use collect so that we pass all the fasta files to the rename process at once
-            // Otherwise, it will try to rename each fasta file one at a time
-            // Which since rename is so fast, will clog up job queues
-            // so it is faster to rename all at once
-            RENAME_FASTA( fasta_name.toList(), fasta_files.toList() )
-            // we use flatten here to turn a list back into a channel
-            renamed_fasta_paths = RENAME_FASTA.out.renamed_fasta_paths.flatten()
-            // we need to recreate the fasta channel with the renamed fasta files
-            ch_fasta = renamed_fasta_paths.map {
-                fasta_name = it.getBaseName()
-                tuple(fasta_name, it)
-            }
-        }
-
         CALL( ch_fasta )
         ch_quast_stats = CALL.out.ch_quast_stats
         ch_gene_locs = CALL.out.ch_gene_locs
         ch_called_proteins = CALL.out.ch_called_proteins
-        ch_collected_fna = CALL.out.ch_collected_fna
         ch_gene_gff = CALL.out.ch_gene_gff
         ch_filtered_fasta = CALL.out.ch_filtered_fasta
         ch_called_genes = CALL.out.ch_called_genes
@@ -86,68 +64,44 @@ workflow ANNOTATE {
                 tuple(input_fastaName, file)
             }
 
-        fasta_name = ch_called_proteins.map { tup -> tup[0] }
-        fasta_files = ch_called_proteins.map { tup -> tup[1] }
+        ch_called_genes = channel
+            .fromPath(file(params.input_genes) / params.genes_fna_fmt)
+            .map { file ->
+                def input_fastaName = file.getBaseName()
+                tuple(input_fastaName, file)
+            }
+
+        ch_called_genes.ifEmpty{ log.warn("No genes matching `genes_fna_fmt` found. Skipping all processes needing called_genes/fna files") }
 
         if(params.rename) {
-            // We need to use collect so that we pass all the fasta files to the rename process at once
-            // Otherwise, it will try to rename each fasta file one at a time
-            // Which since rename is so fast, will clog up job queues
-            // so it is faster to rename all at once
-            RENAME_PROTEINS( fasta_name.toList(), fasta_files.toList() )
-            // we use flatten here to turn a list back into a channel
-            renamed_paths = RENAME_PROTEINS.out.renamed_paths.flatten()
-            // we need to recreate the fasta channel with the renamed fasta files
-            ch_called_proteins = renamed_paths.map {
-                fasta_name = it.getBaseName()
-                tuple(fasta_name, it)
-            }
+
+            def ch_called_proteins_collected = collectNamePathTuples(ch_called_proteins)
+            RENAME_PROTEINS( ch_called_proteins_collected )
+            ch_called_proteins = batchManifestToTuples(RENAME_PROTEINS.out.renamed_batch)
+
+            def ch_called_genes_collected = collectNamePathTuples(ch_called_genes, true)
+            RENAME_FNA( ch_called_genes_collected )
+            ch_called_genes = batchManifestToTuples(RENAME_FNA.out.renamed_batch)
         }
 
-        GENE_LOCS( ch_called_proteins)
+        // input_genes is the final logical query for all downstream searches.
+        ch_called_proteins = ch_called_proteins
+            .map { name, proteins -> tuple(name, proteins, resourceBytes(proteins)) }
+
+        GENE_LOCS( ch_called_proteins.map { name, proteins, _bytes -> tuple(name, proteins) })
         ch_gene_locs = GENE_LOCS.out.prodigal_locs_tsv
+
         // n_fastas = file("$params.input_genes/${params.genes_fmt}").size()
+
     }
-    ch_antismash_map = ch_filtered_fasta
-        .map { file ->
-            def meta = [:]
-            meta.id = file.getBaseName()
-            tuple(meta, file)
-        }
-
-    ch_fna_map = ch_called_genes
-        .map {
-                file_name, file ->
-                def meta = [:]
-                meta.id = file_name
-                tuple(meta, file)
-            }
-
-    ch_faa_map = ch_called_proteins
-        .map {
-                file_name, file ->
-                def meta = [:]
-                meta.id = file_name
-                tuple(meta, file)
-            }
-
-    ch_gff_map = ch_gene_gff
-        .map {
-            file ->
-            def meta = [:]
-            meta.id = file.getBaseName()
-            tuple(meta, file, "prodigal")
-        }
 
     if (params.annotate){
         DB_SEARCH(
             ch_gene_locs,
             ch_called_proteins,
-            ch_antismash_map,
-            ch_fna_map,
-            ch_faa_map,
-            ch_gff_map,
+            ch_filtered_fasta,
             ch_gene_gff,
+            ch_called_genes,
             default_sheet,
             use_kegg,
             use_kofam,
@@ -166,21 +120,13 @@ workflow ANNOTATE {
             use_card,
             use_tcdb,
             use_dram_db,
-            use_vog
+            use_vog,
+            call
             )
         ch_combined_annotations = DB_SEARCH.out.ch_combined_annotations
     }
 
-    if (params.qc){
-        QC( ch_fasta, default_sheet, ch_combined_annotations, ch_collected_fna, call )
-        ch_rrna_collected = QC.out.ch_rrna_collected
-        ch_trna_collected = QC.out.ch_trna_collected
-        ch_combined_annotations = QC.out.ch_final_annots
-    }
-
     emit:
-    ch_rrna_collected
-    ch_trna_collected
     ch_combined_annotations
     ch_quast_stats
 
