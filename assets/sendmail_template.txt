@@ -1,4 +1,5 @@
 To: $email
+From: $email
 Subject: $subject
 Mime-Version: 1.0
 Content-Type: multipart/related;boundary="nfcoremimeboundary"
@@ -9,12 +10,12 @@ Content-Type: text/html; charset=utf-8
 $email_html
 
 --nfcoremimeboundary
-Content-Type: image/png;name="WrightonLabCSU-dram_logo.png"
+Content-Type: image/png;name="BortonWrightonLabs-dram_logo.png"
 Content-Transfer-Encoding: base64
 Content-ID: <nfcorepipelinelogo>
-Content-Disposition: inline; filename="WrightonLabCSU-dram_logo_light.png"
+Content-Disposition: inline; filename="BortonWrightonLabs-dram_logo_light.png"
 
-<% out << new File("$projectDir/assets/WrightonLabCSU-dram_logo_light.png").
+<% out << new File("$projectDir/assets/images/DRAM2_large.png").
     bytes.
     encodeBase64().
     toString().
