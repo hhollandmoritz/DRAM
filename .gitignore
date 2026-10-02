@@ -12,6 +12,11 @@ DRAM_output/
 output/
 outdir/
 work/
+results/
+
+# DRAM input folders
+assemblies/
+databases/
 
 # Visualization Output Files
 product.html
