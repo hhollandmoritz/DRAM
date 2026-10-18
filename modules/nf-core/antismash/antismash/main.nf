@@ -4,14 +4,21 @@ process ANTISMASH_ANTISMASH {
 
     conda "${moduleDir}/environment.yml"
     /*
+    // original container - crashing on build currently
     container "${ workflow.containerEngine in ['singularity', 'apptainer'] ?
         'oras://community.wave.seqera.io/library/antismash:8.0.1--752e6d42c01e68b6' :
         'nf-core/antismash:8.0.1--pyhdfd78af_0' }"
-   */
-    
+
+    // lite antismash has proper lanthanides, but lacks ps
     container "${ workflow.containerEngine in ['singularity', 'apptainer'] ?
          'docker://antismash/standalone-lite:8.0.1' :
          'antismash/standalone-lite:8.0.1' }"
+    */
+
+    // new container has ps built in
+    container "${workflow.containerEngine == 'singularity' ?
+         '/home/hahollan/software/DRAM/containers/antismash-lite-procps-8.0.1.sif' :
+         'antismash/standalone-lite:8.0.1'}"
 
     input:
     tuple val(meta), path(sequence_input)
