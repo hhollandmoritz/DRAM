@@ -16,9 +16,9 @@ process ANTISMASH_ANTISMASH {
     */
 
     // new container has ps built in
-    container "${workflow.containerEngine == 'singularity' ?
-         '/home/hahollan/software/DRAM/containers/antismash-lite-procps-8.0.1.sif' :
-         'antismash/standalone-lite:8.0.1'}"
+    container workflow.containerEngine in ['singularity', 'apptainer'] ?
+         "${workflow.projectDir}/containers/antismash-lite-procps-8.0.1.sif" :
+         'antismash/standalone-lite:8.0.1'
 
     input:
     tuple val(meta), path(sequence_input)
