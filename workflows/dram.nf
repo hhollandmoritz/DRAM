@@ -12,7 +12,7 @@ include { methodsDescriptionText  } from '../subworkflows/local/utils_nfcore_dra
 include { getDBFlag               } from '../subworkflows/local/utils_pipeline_setup.nf'
 
 // Pipeline steps
-include { ADJECTIVES             } from "../modules/local/adjectives/adjectives.nf"
+include { TRAITS             } from "../modules/local/product/traits.nf"
 include { PRODUCT_HEATMAP        } from "../modules/local/product/product_heatmap.nf"
 include { CAT_KEGG_PEP           } from "../modules/local/database/cat_kegg_pep.nf"
 include { FORMAT_KEGG_DB         } from "../modules/local/database/format_kegg_db.nf"
@@ -172,7 +172,7 @@ workflow DRAM {
         }
 
         if (distill_ecosystem != "") {
-            def validEcos = ['eng_sys', 'ag', 'bgc', 'gut', 'marine']
+            def validEcos = ['eng_sys', 'ag', 'bgc', 'gut', 'aquatic']
             def distillEcosystemList = distill_ecosystem.split(',')
             def vizRulesSystemList = viz_rules_system ?
                 viz_rules_system.split(',').collect { it.trim() } :
@@ -182,11 +182,11 @@ workflow DRAM {
                 if (!validEcos.contains(ecosysItem)) {
                     error("Invalid distill ecosystem: $ecosysItem. Valid values are ${validEcos.join(',')}. If you included those, try comma separating them without spaces.")
                 }
-                if (ecosysItem == "ag") {
-                    if (!((use_kegg || use_kofam) && use_metals && use_dbcan)) {
-                        error("When sum_ecos ag, you must include (kegg or kofam), metals, and dbcan databases")
-                    }
-                }
+                // if (ecosysItem == "ag") {
+                //     if (!((use_kegg || use_kofam) && use_metals && use_dbcan)) {
+                //         error("When sum_ecos ag, you must include (kegg or kofam), metals, and dbcan databases")
+                //     }
+                // }
                 if (!vizRulesSystemList.contains(ecosysItem)) {
                     vizRulesSystemList << ecosysItem
                 }
@@ -353,20 +353,23 @@ workflow DRAM {
             ch_viz_rules_tsv = params.viz_rules_tsv ?
                 channel.fromPath(params.viz_rules_tsv, checkIfExists: true) :
                 channel.empty()
+            ch_viz_common_rules_tsv = params.viz_common_rules_tsv ?
+                channel.fromPath(params.viz_common_rules_tsv, checkIfExists: true) :
+                channel.empty()
             ch_viz_mapping_file = params.viz_mapping_file ?
                 channel.fromPath(params.viz_mapping_file, checkIfExists: true) :
                 channel.empty()
-            PRODUCT_HEATMAP( ch_final_annots, params.CONSTANTS.FASTA_COLUMN, ch_viz_rules_tsv.toList(), ch_viz_mapping_file.toList(), viz_rules_system )
+            PRODUCT_HEATMAP( ch_final_annots, params.CONSTANTS.FASTA_COLUMN, ch_viz_rules_tsv.toList(), ch_viz_common_rules_tsv.toList(), ch_viz_mapping_file.toList(), viz_rules_system )
         }
         //
-        // ADJECTIVES
+        // TRAITS
         //
 
         if( traits ){
             if (!ch_final_annots) {
                 error("Error: If you specify --product, you must also specify --annotate or --distill_<topic|ecosystem|custom> to generate the product heatmap or provide an annotations TSV file (--annotations <path>).")
             }
-            ADJECTIVES( ch_final_annots, file(params.trait_rules_tsv))
+            TRAITS( ch_final_annots, file(params.trait_rules_tsv), file(params.trait_common_rules_tsv))
         }
     }
 
